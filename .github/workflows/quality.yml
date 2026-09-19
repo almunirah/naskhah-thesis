@@ -1,0 +1,29 @@
+name: Quality
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm install
+      - run: npm run db:generate
+        env:
+          DATABASE_URL: postgresql://user:pass@localhost:5432/db
+      - run: npm run db:validate
+        env:
+          DATABASE_URL: postgresql://user:pass@localhost:5432/db
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
