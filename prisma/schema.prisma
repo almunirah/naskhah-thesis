@@ -1,0 +1,114 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  SUPERVISOR
+  STUDENT
+}
+
+enum ProjectStatus {
+  PLANNING
+  ACTIVE
+  ON_HOLD
+  COMPLETED
+  ARCHIVED
+}
+
+enum NodeType {
+  CHAPTER
+  SECTION
+  SUBSECTION
+}
+
+model User {
+  id        String          @id @default(cuid())
+  email     String          @unique
+  name      String?
+  role      Role            @default(STUDENT)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  projects  ProjectMember[]
+}
+
+model Programme {
+  id        String            @id @default(cuid())
+  name      String
+  code      String?
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  projects  ResearchProject[]
+}
+
+model ResearchProject {
+  id          String          @id @default(cuid())
+  title       String
+  status      ProjectStatus   @default(PLANNING)
+  programmeId String?
+  programme   Programme?      @relation(fields: [programmeId], references: [id], onDelete: SetNull)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  members     ProjectMember[]
+  nodes       ThesisNode[]
+}
+
+model ProjectMember {
+  id        String          @id @default(cuid())
+  projectId String
+  userId    String
+  role      Role
+  project   ResearchProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime        @default(now())
+
+  @@unique([projectId, userId])
+  @@index([userId])
+}
+
+model ThesisNode {
+  id        String          @id @default(cuid())
+  projectId String
+  parentId  String?
+  type      NodeType
+  title     String
+  position  Int             @default(0)
+  project   ResearchProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  parent    ThesisNode?     @relation("NodeTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children  ThesisNode[]    @relation("NodeTree")
+  items     WritingItem[]
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  @@index([projectId, parentId, position])
+}
+
+model WritingItem {
+  id        String           @id @default(cuid())
+  nodeId    String
+  title     String
+  node      ThesisNode       @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+  versions  WritingVersion[]
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  @@index([nodeId])
+}
+
+model WritingVersion {
+  id            String      @id @default(cuid())
+  writingItemId String
+  version       Int
+  content       Json
+  wordCount     Int         @default(0)
+  createdAt     DateTime    @default(now())
+  item          WritingItem @relation(fields: [writingItemId], references: [id], onDelete: Cascade)
+
+  @@unique([writingItemId, version])
+}
