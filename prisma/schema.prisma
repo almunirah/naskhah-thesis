@@ -14,6 +14,11 @@ enum Role {
   STUDENT
 }
 
+enum UserStatus {
+  ACTIVE
+  DISABLED
+}
+
 enum ProjectStatus {
   PLANNING
   ACTIVE
@@ -29,13 +34,17 @@ enum NodeType {
 }
 
 model User {
-  id        String          @id @default(cuid())
-  email     String          @unique
-  name      String?
-  role      Role            @default(STUDENT)
-  createdAt DateTime        @default(now())
-  updatedAt DateTime        @updatedAt
-  projects  ProjectMember[]
+  id           String          @id @default(cuid())
+  email        String          @unique
+  name         String?
+  passwordHash String?
+  role         Role            @default(STUDENT)
+  status       UserStatus      @default(ACTIVE)
+  sessionEpoch Int             @default(0)
+  lastLoginAt  DateTime?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  projects     ProjectMember[]
 }
 
 model Programme {
